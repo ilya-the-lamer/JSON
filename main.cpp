@@ -263,9 +263,7 @@ public:
 };
 
 int main() {
-    freopen("input.txt", "r", stdin);
-    string s;
-    getline(cin, s);
+    string s = "{ \"a\" : [\"aaaaaaaaaaaaaaaaaaaaaaaaasFdgfghfjhk.lfhkjghdgfshafdsSAsfdgfhgjhkjou.ly,ktmjndhbgfsdvfcsd;lkjhmgdbfdcsxk,hjmghnfgbfvc\"]}";
     JSON obj(s);
     cerr << "first_" << obj["a"][0].value() << "_end" << "\n";
     {
