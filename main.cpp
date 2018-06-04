@@ -9,6 +9,7 @@ using std::map;
 using std::vector;
 using std::stack;
 using std::cin;
+using std::cout;
 using std::runtime_error;
 
 
@@ -42,6 +43,7 @@ private:
 public:
 
     explicit JSON(string s = "") {
+        cerr << s << "\n";
         if (s.empty()) {
             type = "string";
             ptr = new string(s);
@@ -249,54 +251,63 @@ public:
     }
 
     ~JSON() {
-        // WHAT THE HELL IS HERE??
         if (type == "string") {
-            delete (string*) ptr;
+            string* sptr = (string*) ptr;
+            delete sptr;
         }
         if (type == "map") {
-            // (*((Map*) ptr)).~Map();
+            Map* mptr = (Map*) ptr;
+            while (mptr->begin() != mptr->end()) {
+                mptr->erase(mptr->begin()->first);
+            }
+            delete mptr;
         }
         if (type == "list") {
-            (*((Vector*) ptr)).~Vector();;
+            Vector* vptr = (Vector*) ptr;
+            while (vptr->begin() != vptr->end()) {
+                vptr->pop_back();
+            }
+            delete vptr;
         }
     }
 };
 
 int main() {
-    string s = "{ \"a\" : [\"aaaaaaaaaaaaaaaaaaaaaaaaasFdgfghfjhk.lfhkjghdgfshafdsSAsfdgfhgjhkjou.ly,ktmjndhbgfsdvfcsd;lkjhmgdbfdcsxk,hjmghnfgbfvc\"]}";
+    string s = "{ \"a\" : [\"b shvabra\"], \"c\" : [\"d\", \"f\", [\"g\"], {\"e\" : \"h\"}]}";
     JSON obj(s);
-    cerr << "first_" << obj["a"][0].value() << "_end" << "\n";
+    cout << "first_" << obj["a"][0].value() << "_end" << "\n";
     {
         JSON obj2 = obj;
         string tmp = "\" buba \"";
         obj2.at("a").at(0) = JSON(tmp);
-        cerr << "second_" << obj2["a"][0].value() << "_end" << "\n";
+        cout << "second_" << obj2["a"][0].value() << "_end" << "\n";
 
         try {
             obj.at(1);
         }
         catch (...) {
-            cerr << "ok1\n";
+            cout << "ok1\n";
         }
         try {
             obj.at("a").at("a");
         }
         catch (...) {
-            cerr << "ok2\n";
+            cout << "ok2\n";
         }
         try {
             obj.at("a").at("a").at(1);
         }
         catch (...) {
-            cerr << "ok3\n";
+            cout << "ok3\n";
         }
         try {
             obj.value();
         }
         catch (...) {
-            cerr << "ok4\n";
+            cout << "ok4\n";
         }
     }
-    cerr << "first_" << obj["a"][0].value() << "_end" << "\n";
+    cout << "first_" << obj["a"][0].value() << "_end" << "\n";
+    cout << obj.serialize() << "\n";
     return 0;
 }
