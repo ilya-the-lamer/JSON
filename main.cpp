@@ -43,7 +43,6 @@ private:
 public:
 
     explicit JSON(string s = "") {
-        cerr << s << "\n";
         if (s.empty()) {
             type = "string";
             ptr = new string(s);
@@ -52,34 +51,7 @@ public:
             type = "string";
             ptr = new string(s.substr(1, s.size() - 2));
         }
-        if (s[0] == '[') {
-            type = "list";
-            ptr = new Vector;
-            string cur_tok;
-            stack<char> st;
-            s.back() = ',';
-            for (size_t i = 1; i < s.size(); ++i) {
-                if (s[i] == ',' and st.empty()) {
-                    int cnt = 0;
-                    while (cnt < cur_tok.size() and cur_tok[cnt] == ' ') {
-                        ++cnt;
-                    }
-                    int cnt_end = (int) cur_tok.size() - 1;
-                    while (cnt_end > -1 and cur_tok[cnt_end] == ' ') {
-                        --cnt_end;
-                    }
-                    (*((Vector*) ptr)).emplace_back(string(cur_tok.begin() + cnt, cur_tok.begin() + cnt_end + 1));
-                    cur_tok = "";
-                } else {
-                    cur_tok.push_back(s[i]);
-                    if (s[i] == '{' or s[i] == '[') {
-                        st.push(s[i]);
-                    } else if (s[i] == '}' or s[i] == ']') {
-                        st.pop();
-                    }
-                }
-            }
-        }
+
         if (s[0] == '{') {
             type = "map";
             ptr = new Map;
@@ -88,44 +60,93 @@ public:
             bool name = true;
             stack<char> st;
             s.back() = ',';
+            bool quote = false;
             for (size_t i = 1; i < s.size(); ++i) {
-                if (s[i] == ':' and st.empty()) {
-                    name = false;
-                } else if (s[i] == ',' and st.empty()) {
-                    name = true;
-                    int cnt = 0;
-                    while (cnt < cur_value.size() and cur_value[cnt] == ' ') {
-                        ++cnt;
-                    }
-                    int cnt_end = (int) cur_value.size() - 1;
-                    while (cnt_end > -1 and cur_value[cnt_end] == ' ') {
-                        --cnt_end;
-                    }
-
-                    int cnt_name = 0;
-                    while (cnt_name < cur_name.size() and cur_name[cnt_name] == ' ') {
-                        ++cnt_name;
-                    }
-                    int cnt_name_end = (int) cur_name.size() - 1;
-                    while (cnt_name_end > -1 and cur_name[cnt_name_end] == ' ') {
-                        --cnt_name_end;
-                    }
-
-
-                    (*((Map*) ptr))[string(cur_name.begin() + cnt_name + 1, cur_name.begin() + cnt_name_end)] =
-                            JSON(string(cur_value.begin() + cnt, cur_value.begin() + cnt_end + 1));
-                    cur_name = "";
-                    cur_value = "";
-                } else {
+                if (s[i] == '"') {
+                    quote = !quote;
+                }
+                if (quote) {
                     if (name) {
                         cur_name.push_back(s[i]);
                     } else {
                         cur_value.push_back(s[i]);
                     }
-                    if (s[i] == '{' or s[i] == '[') {
-                        st.push(s[i]);
-                    } else if (s[i] == '}' or s[i] == ']') {
-                        st.pop();
+                } else {
+                    if (s[i] == ':' and st.empty()) {
+                        name = false;
+                    } else if (s[i] == ',' and st.empty()) {
+                        name = true;
+                        int cnt = 0;
+                        while (cnt < cur_value.size() and cur_value[cnt] == ' ') {
+                            ++cnt;
+                        }
+                        int cnt_end = (int) cur_value.size() - 1;
+                        while (cnt_end > -1 and cur_value[cnt_end] == ' ') {
+                            --cnt_end;
+                        }
+
+                        int cnt_name = 0;
+                        while (cnt_name < cur_name.size() and cur_name[cnt_name] == ' ') {
+                            ++cnt_name;
+                        }
+                        int cnt_name_end = (int) cur_name.size() - 1;
+                        while (cnt_name_end > -1 and cur_name[cnt_name_end] == ' ') {
+                            --cnt_name_end;
+                        }
+
+
+                        (*((Map*) ptr))[string(cur_name.begin() + cnt_name + 1, cur_name.begin() + cnt_name_end)] =
+                                JSON(string(cur_value.begin() + cnt, cur_value.begin() + cnt_end + 1));
+                        cur_name = "";
+                        cur_value = "";
+                    } else {
+                        if (name) {
+                            cur_name.push_back(s[i]);
+                        } else {
+                            cur_value.push_back(s[i]);
+                        }
+                        if (s[i] == '{' or s[i] == '[') {
+                            st.push(s[i]);
+                        } else if (s[i] == '}' or s[i] == ']') {
+                            st.pop();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (s[0] == '[') {
+            type = "vector";
+            ptr = new Vector;
+            string cur_tok;
+            stack<char> st;
+            bool quote = false;
+            s.back() = ',';
+            for (size_t i = 1; i < s.size(); ++i) {
+                if (s[i] == '"') {
+                    quote = !quote;
+                }
+                if (quote) {
+                    cur_tok.push_back(s[i]);
+                } else {
+                    if (s[i] == ',' and st.empty()) {
+                        int cnt = 0;
+                        while (cnt < cur_tok.size() and cur_tok[cnt] == ' ') {
+                            ++cnt;
+                        }
+                        int cnt_end = (int) cur_tok.size() - 1;
+                        while (cnt_end > -1 and cur_tok[cnt_end] == ' ') {
+                            --cnt_end;
+                        }
+                        (*((Vector*) ptr)).emplace_back(string(cur_tok.begin() + cnt, cur_tok.begin() + cnt_end + 1));
+                        cur_tok = "";
+                    } else {
+                        cur_tok.push_back(s[i]);
+                        if (s[i] == '{' or s[i] == '[') {
+                            st.push(s[i]);
+                        } else if (s[i] == '}' or s[i] == ']') {
+                            st.pop();
+                        }
                     }
                 }
             }
@@ -138,16 +159,18 @@ public:
             ptr = new string;
             *((string*) ptr) = *((string*) other.ptr);
         }
-        if (type == "list") {
-            ptr = new Vector;
-            for (const JSON& child : *((Vector*) other.ptr)) {
-                (*((Vector*) ptr)).push_back(child);
-            }
-        }
+
         if (type == "map") {
             ptr = new Map;
             for (const auto& child : *((Map*) other.ptr)) {
                 (*((Map*) ptr))[child.first] = child.second;
+            }
+        }
+
+        if (type == "vector") {
+            ptr = new Vector;
+            for (const JSON& child : *((Vector*) other.ptr)) {
+                (*((Vector*) ptr)).push_back(child);
             }
         }
     }
@@ -177,7 +200,7 @@ public:
         if (type == "map") {
             return (*((Map*) ptr))[arg];
         }
-        if (type == "list") {
+        if (type == "vector") {
             throw WrongIndexException("int", "string");
         }
     }
@@ -189,7 +212,7 @@ public:
         if (type == "map") {
             throw WrongIndexException("string", "int");
         }
-        if (type == "list") {
+        if (type == "vector") {
             return (*((Vector*) ptr))[arg];
         }
     }
@@ -201,7 +224,7 @@ public:
         if (type == "map") {
             return (*((Map*) ptr)).at(arg);
         }
-        if (type == "list") {
+        if (type == "vector") {
             throw WrongIndexException("int", "string");
         }
     }
@@ -213,7 +236,7 @@ public:
         if (type == "map") {
             throw WrongIndexException("string", "int");
         }
-        if (type == "list") {
+        if (type == "vector") {
             return (*((Vector*) ptr)).at(arg);
         }
     }
@@ -235,7 +258,7 @@ public:
             answer.back() = '}';
             return answer;
         }
-        if (type == "list") {
+        if (type == "vector") {
             string answer = "[";
             Vector v = (*((Vector*) ptr));
             for (const auto& child : v) {
@@ -262,7 +285,7 @@ public:
             }
             delete mptr;
         }
-        if (type == "list") {
+        if (type == "vector") {
             Vector* vptr = (Vector*) ptr;
             while (vptr->begin() != vptr->end()) {
                 vptr->pop_back();
@@ -270,11 +293,14 @@ public:
             delete vptr;
         }
     }
+
 };
 
 int main() {
-    string s = "{ \"a\" : [\"b shvabra\"], \"c\" : [\"d\", \"f\", [\"g\"], {\"e\" : \"h\"}]}";
+    string s = "{\"a\" : [\"sas\"], \"b, {] bb\" : [\"b, {[]} s{hv]abra\"], \"c\" : [\"d\", \"f\", [\"g\"], {\"e\" : [\"h\"]}]}";
     JSON obj(s);
+    string t = obj.serialize();
+    cout << s << "\n" << t << "\n";
     cout << "first_" << obj["a"][0].value() << "_end" << "\n";
     {
         JSON obj2 = obj;
@@ -308,6 +334,5 @@ int main() {
         }
     }
     cout << "first_" << obj["a"][0].value() << "_end" << "\n";
-    cout << obj.serialize() << "\n";
     return 0;
 }
